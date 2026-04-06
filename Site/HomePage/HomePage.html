@@ -1,0 +1,53 @@
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clean'MT</title>
+    <link rel="stylesheet" href="HomePage.css" />
+  </head>
+  <body>
+    <header id="siteHeader"> <!-- Bandeau de la page -->
+      <nav id="topNav" aria-label="Navigation principale">
+        <div id="navLeft">
+          <div id="navLogo" aria-hidden="true"></div>
+        </div>
+
+        <div id="navLinks">
+          <a class="navLink" href="../Machines/Machines.html">Machines</a>
+          <a class="navLink" href="HomePage.html">Clean'MT</a>
+          <a class="navLink" href="../CommIMT/CommIMT.html">Comm'IMT</a>
+        </div>
+
+        <div id="navRight" aria-label="Logo">
+          <a id="btnConnexion" href="../Connexion/Connexion.html">Se connecter</a>
+        </div>
+      </nav>
+    </header> <!-- Fin du bandeau de la page -->
+
+    <main id="main">
+      <section id="dash" aria-label="Tableau de bord"> <!-- Partie importante -->
+        <div id="dashGrid">
+          <section id="machinesWidget" aria-label="Machines bientôt disponibles">
+            <div class="widgetHeader">
+              <h3 class="widgetTitle">Machines bientôt disponibles</h3>
+            </div>
+            <div id="machinesList" class="widgetBody" aria-label="Liste des machines"></div>
+            <a class="widgetLink" href="../Machines/Machines.html">Voir toutes les machines</a>
+          </section>
+
+          <section id="communityWidget" aria-label="Comm'IMT">
+            <div class="widgetHeader">
+              <h3 class="widgetTitle">Comm'IMT</h3>
+            </div>
+            <div id="communityFeed" class="widgetBody" aria-label="Flux communauté"></div>
+            <a class="widgetLink" href="../CommIMT/CommIMT.html">Voir toutes les actualités</a>
+          </section>
+        </div>
+      </section> <!-- Fin de la partie importante -->
+    </main>
+    <script src="../CommIMT/Auth.js" defer></script>
+    <script src="HomePage.js" defer></script>
+  </body>
+</html>

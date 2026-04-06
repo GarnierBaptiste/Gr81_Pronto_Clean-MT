@@ -1,0 +1,55 @@
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clean'MT - Connexion</title>
+    <link rel="stylesheet" href="../HomePage/HomePage.css" />
+    <link rel="stylesheet" href="Connexion.css" />
+  </head>
+  <body>
+    <header id="siteHeader">
+      <nav id="topNav" aria-label="Navigation principale">
+        <div id="navLeft">
+          <div id="navLogo" aria-hidden="true"></div>
+        </div>
+
+        <div id="navLinks">
+          <a class="navLink" href="../Machines/Machines.html">Machines</a>
+          <a class="navLink" href="../HomePage/HomePage.html">Clean'MT</a>
+          <a class="navLink" href="../CommIMT/CommIMT.html">Comm'IMT</a>
+        </div>
+
+        <div id="navRight">
+          <a id="btnConnexion" href="Connexion.html">Se connecter</a>
+        </div>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section id="loginWrap" aria-label="Connexion">
+        <h1 id="loginTitle">Connexion</h1>
+        <div id="loginHint">Démo : clique sur “Se connecter” pour activer l'état connecté (stocké dans le navigateur).</div>
+
+        <div class="field">
+          <input
+            class="input"
+            id="loginEmail"
+            type="email"
+            placeholder="prenom.nom@imt-atlantique.net"
+            autocomplete="email"
+          />
+          <input class="input" id="loginPass" type="password" placeholder="Mot de passe" autocomplete="current-password" />
+        </div>
+
+        <div id="loginActions">
+          <button class="btn btn-primary" id="btnDoLogin" type="button">Se connecter</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="../CommIMT/Auth.js" defer></script>
+    <script src="Connexion.js" defer></script>
+  </body>
+</html>

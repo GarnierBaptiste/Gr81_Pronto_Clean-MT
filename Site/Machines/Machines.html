@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clean'MT</title>
+    <link rel="stylesheet" href="../HomePage/HomePage.css" />
+    <link rel="stylesheet" href="Machines.css" />
+  </head>
+  <body>
+    <header id="siteHeader"> <!-- Bandeau de la page -->
+      <nav id="topNav" aria-label="Navigation principale">
+        <div id="navLeft">
+          <div id="navLogo" aria-hidden="true"></div>
+        </div>
+
+        <div id="navLinks">
+          <a class="navLink" href="../HomePage/HomePage.html">Clean'MT</a>
+          <a class="navLink" href="Machines.html">Machines</a>
+          <a class="navLink" href="../CommIMT/CommIMT.html">Comm'IMT</a>
+        </div>
+
+        <div id="navRight" aria-label="Logo">
+          <a id="btnConnexion" href="../Connexion/Connexion.html">Se connecter</a>
+        </div>
+      </nav>
+    </header> <!-- Fin du bandeau de la page -->
+
+    <main id="main">
+      <section id="machinesPage" aria-label="Toutes les machines">
+        <div class="widgetHeader">
+          <h3 class="widgetTitle">Toutes les machines</h3>
+        </div>
+        <div id="machinesGrid" aria-label="Grille des machines"></div>
+      </section>
+    </main>
+
+    <script src="../CommIMT/Auth.js" defer></script>
+    <script src="Machines.js" defer></script>
+  </body>
+</html>

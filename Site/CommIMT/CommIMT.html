@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clean'MT</title>
+    <link rel="stylesheet" href="../HomePage/HomePage.css" />
+    <link rel="stylesheet" href="CommIMT.css" />
+  </head>
+
+  <body>
+    <header id="siteHeader"> <!-- Bandeau de la page -->
+      <nav id="topNav" aria-label="Navigation principale">
+        <div id="navLeft">
+          <div id="navLogo" aria-hidden="true"></div>
+        </div>
+
+        <div id="navLinks">
+          <a class="navLink" href="../Machines/Machines.html">Machines</a>
+          <a class="navLink" href="CommIMT.html">Comm'IMT</a>
+          <a class="navLink" href="../HomePage/HomePage.html">Clean'MT</a>
+        </div>
+
+        <div id="navRight" aria-label="Logo">
+          <a id="btnConnexion" href="../Connexion/Connexion.html">Se connecter</a>
+        </div>
+      </nav>
+    </header> <!-- Fin du bandeau de la page -->
+
+    <main id="commWrap">
+      <div style="margin-top: 12px; display: flex; justify-content: flex-end;">
+        <button id="btnResetForums" class="btn" type="button">Remettre à zéro</button>
+      </div>
+
+      <section id="commGrid" aria-label="Forums">
+        <section class="panel" aria-label="Forum messages">
+          <div class="panelHeader">
+            <h2 class="panelTitle">Forum messages</h2>
+            <div class="panelHint">Lecture libre</div>
+          </div>
+          <div class="panelBody">
+            <div id="msgReadonly" class="readonly" style="display: none;">
+              Tu n'es pas connecté : tu peux lire les messages, mais tu ne peux pas publier.
+            </div>
+            <div id="msgList" class="list" aria-label="Messages"></div>
+            <div class="field">
+              <textarea id="msgText" class="textarea" placeholder="Écrire un message..."></textarea>
+              <button id="btnPostMsg" class="btn btn-primary" type="button">Publier</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" aria-label="Forum photos">
+          <div class="panelHeader">
+            <h2 class="panelTitle">Forum photos</h2>
+            <div class="panelHint">Lecture libre</div>
+          </div>
+          <div class="panelBody">
+            <div id="photoReadonly" class="readonly" style="display: none;">
+              Tu n'es pas connecté : tu peux voir les photos, mais tu ne peux pas publier.
+            </div>
+            <div id="photoList" class="list" aria-label="Photos"></div>
+            <div class="field">
+              <input id="photoTitle" class="input" type="text" placeholder="Titre" />
+              <textarea id="photoText" class="textarea" placeholder="Description..."></textarea>
+              <input id="photoFile" class="input" type="file" accept="image/*" />
+              <button id="btnPostPhoto" class="btn btn-primary" type="button">Publier</button>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="Auth.js" defer></script>
+    <script src="CommIMT.js" defer></script>
+  </body>
+</html>
