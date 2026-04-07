@@ -27,13 +27,13 @@ function applyAuthToLink(el) {
         e.preventDefault();
         setLoggedIn(false);
         clearUserInfo();
-        window.location.href = "../HomePage/HomePage.html";
+        window.location.href = "../../Index.html";
       });
     } else {
       el.addEventListener("click", () => {
         setLoggedIn(false);
         clearUserInfo();
-        window.location.href = "../HomePage/HomePage.html";
+        window.location.href = "../../Index.html";
       });
     }
   } else {

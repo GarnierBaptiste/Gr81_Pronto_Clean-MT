@@ -1,12 +1,11 @@
-
 <!doctype html>
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Clean'MT - Connexion</title>
+    <title>Clean'MT - Inscription</title>
     <link rel="stylesheet" href="../HomePage/HomePage.css" />
-    <link rel="stylesheet" href="Connexion.css" />
+    <link rel="stylesheet" href="Inscription.css" />
   </head>
   <body>
     <header id="siteHeader">
@@ -22,35 +21,38 @@
         </div>
 
         <div id="navRight">
-          <a id="btnConnexion" href="Connexion.html">Se connecter</a>
+          <a id="btnConnexion" href="../Connexion/Connexion.html">Se connecter</a>
         </div>
       </nav>
     </header>
 
     <main id="main">
-      <section id="loginWrap" aria-label="Connexion">
-        <h1 id="loginTitle">Connexion</h1>
-        <div id="loginHint">Démo : clique sur “Se connecter” pour activer l'état connecté (stocké dans le navigateur).</div>
+      <section id="signupWrap" aria-label="Inscription">
+        <h1 id="signupTitle">Inscription</h1>
+        <div id="signupHint">Un email de validation sera préparé dans ton client mail.</div>
 
         <div class="field">
           <input
             class="input"
-            id="loginEmail"
+            id="signupEmail"
             type="email"
             placeholder="prenom.nom@imt-atlantique.net"
             autocomplete="email"
           />
-          <input class="input" id="loginPass" type="password" placeholder="Mot de passe" autocomplete="current-password" />
+          <input class="input" id="signupPass" type="password" placeholder="Mot de passe" autocomplete="new-password" />
+          <input class="input" id="signupPass2" type="password" placeholder="Confirmer le mot de passe" autocomplete="new-password" />
         </div>
 
-        <div id="loginActions">
-          <button class="btn btn-primary" id="btnDoLogin" type="button">Se connecter</button>
-          <a class="btn" href="../Inscription/Inscription.html">S’inscrire</a>
+        <div id="signupActions">
+          <button class="btn btn-primary" id="btnDoSignup" type="button">Créer mon compte</button>
+          <a class="btn" href="../Connexion/Connexion.html">J'ai déjà un compte</a>
         </div>
+
+        <div id="signupAfter" aria-live="polite" style="display: none; margin-top: 12px;"></div>
       </section>
     </main>
 
     <script src="../CommIMT/Auth.js" defer></script>
-    <script src="Connexion.js" defer></script>
+    <script src="Inscription.js" defer></script>
   </body>
 </html>

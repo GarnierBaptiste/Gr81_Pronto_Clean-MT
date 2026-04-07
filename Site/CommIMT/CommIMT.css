@@ -1,7 +1,9 @@
 #commWrap {
   width: 100%;
-  margin: 26px 0 70px;
-  padding: 0 24px;
+  margin: 0;
+  padding: 12px 12px 12px;
+  height: calc(100vh - var(--header-h));
+  overflow: hidden;
 }
 
 #commTitle {
@@ -21,6 +23,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 14px;
   align-items: start;
+  height: calc(100% - 52px);
 }
 
 .panel {
@@ -29,6 +32,9 @@
   border: 1px solid var(--panel-border);
   box-shadow: var(--shadow);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .panelHeader {
@@ -54,6 +60,8 @@
   padding: 14px 16px 16px;
   display: grid;
   gap: 10px;
+  flex: 1;
+  min-height: 0;
 }
 
 .readonly {
@@ -69,9 +77,10 @@
 .list {
   display: grid;
   gap: 10px;
-  max-height: 460px;
+  flex: 1;
   overflow: auto;
   padding-right: 4px;
+  min-height: 0;
 }
 
 .postRow {

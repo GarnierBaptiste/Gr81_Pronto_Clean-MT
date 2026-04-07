@@ -7,6 +7,7 @@ const STORAGE = {
   CHAT: "pronto_chat_messages",
   COMMIMT_MSGS: "commimt_forum_messages",
   COMMIMT_PHOTOS: "commimt_forum_photos",
+  MACHINES: "pronto_machines_state",
 };
 
 function readJson(key, fallback) {
@@ -22,6 +23,30 @@ function readJson(key, fallback) {
 
 function writeJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function tickMachines() {
+  const saved = readJson(STORAGE.MACHINES, {});
+  let changed = false;
+
+  for (const id of Object.keys(saved || {})) {
+    const s = saved[id];
+    if (!s || typeof s.remainingSeconds !== "number") continue;
+    if (s.remainingSeconds <= 0) continue;
+
+    const next = Math.max(0, s.remainingSeconds - 1);
+    if (next !== s.remainingSeconds) {
+      saved[id] = {
+        ...s,
+        remainingSeconds: next,
+      };
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    writeJson(STORAGE.MACHINES, saved);
+  }
 }
 
 function escapeHtml(str) {
@@ -80,19 +105,20 @@ function seedIfEmpty() {
   }
 }
 
-function buildDemoMachines() {
-  return [
-    { id: "W1", type: "Lave-linge", remainingSeconds: 0 },
-    { id: "W2", type: "Lave-linge", remainingSeconds: 2 * 60 + 10 },
-    { id: "W3", type: "Lave-linge", remainingSeconds: 6 * 60 + 5 },
-    { id: "W4", type: "Lave-linge", remainingSeconds: 12 * 60 + 50 },
-    { id: "D1", type: "Sèche-linge", remainingSeconds: 0 },
-    { id: "D2", type: "Sèche-linge", remainingSeconds: 1 * 60 + 40 },
-    { id: "D3", type: "Sèche-linge", remainingSeconds: 9 * 60 + 0 },
-    { id: "D4", type: "Sèche-linge", remainingSeconds: 0 },
-    { id: "W5", type: "Lave-linge", remainingSeconds: 3 * 60 + 25 },
-    { id: "D5", type: "Sèche-linge", remainingSeconds: 0 },
-  ];
+function buildMachinesFromState() {
+  const machines = [];
+  const saved = readJson(STORAGE.MACHINES, {});
+
+  for (let i = 1; i <= 20; i++) {
+    const id = `Machine ${i}`;
+    const s = saved && saved[id] ? saved[id] : null;
+    machines.push({
+      id,
+      type: "Lave-linge",
+      remainingSeconds: typeof s?.remainingSeconds === "number" ? s.remainingSeconds : (i % 3 === 0 ? 0 : (i * 3) * 60),
+    });
+  }
+  return machines;
 }
 
 function pickSixSoonest(machines) {
@@ -106,17 +132,18 @@ function renderMachines() {
   const container = document.getElementById("machinesList");
   if (!container) return;
 
-  const machines = buildDemoMachines();
+  const machines = buildMachinesFromState();
   const selection = pickSixSoonest(machines);
 
   container.innerHTML = "";
   for (const m of selection) {
-    const available = m.remainingSeconds <= 0;
+    const available = (m.remainingSeconds || 0) <= 0;
     const chipClass = available ? "good" : "warn";
-    const chipText = available ? "Disponible" : `Reste ${formatRemaining(m.remainingSeconds)}`;
+    const chipText = available ? "Disponible" : `Reste ${formatRemaining(m.remainingSeconds || 0)}`;
 
-    const el = document.createElement("div");
+    const el = document.createElement("a");
     el.className = "item";
+    el.setAttribute("href", `Site/Machines/Machines.html#${encodeURIComponent(m.id)}`);
     el.innerHTML = `
       <div class="itemTop">
         <div class="itemTitle">${escapeHtml(m.id)}</div>
@@ -176,4 +203,9 @@ document.addEventListener("DOMContentLoaded", () => {
   seedIfEmpty();
   renderMachines();
   renderCommunity();
+
+  setInterval(() => {
+    tickMachines();
+    renderMachines();
+  }, 1000);
 });

@@ -1,7 +1,23 @@
 document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("btnDoLogin");
   const emailInput = document.getElementById("loginEmail");
+  const passInput = document.getElementById("loginPass");
   if (!btn) return;
+
+  const STORAGE = {
+    USERS: "pronto_users",
+  };
+
+  function readJson(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return fallback;
+      const parsed = JSON.parse(raw);
+      return parsed ?? fallback;
+    } catch {
+      return fallback;
+    }
+  }
 
   function deriveFullNameFromEmail(email) {
     const beforeAt = String(email || "").split("@")[0] || "";
@@ -26,11 +42,31 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    const users = readJson(STORAGE.USERS, []);
+    const pass = passInput ? passInput.value : "";
+
+    if (users.length > 0) {
+      const user = users.find((u) => (u.email || "").toLowerCase() === email);
+      if (!user) {
+        if (emailInput) emailInput.focus();
+        return;
+      }
+
+      if (!user.verified) {
+        return;
+      }
+
+      if (String(user.password || "") !== String(pass || "")) {
+        if (passInput) passInput.focus();
+        return;
+      }
+    }
+
     const fullName = deriveFullNameFromEmail(email);
 
     localStorage.setItem("userEmail", email);
     localStorage.setItem("userFullName", fullName);
     localStorage.setItem("isLoggedIn", "true");
-    window.location.href = "../HomePage/HomePage.html";
+    window.location.href = "../../Index.html";
   });
 });

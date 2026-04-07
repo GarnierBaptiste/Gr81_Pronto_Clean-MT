@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Clean'MT</title>
-    <link rel="stylesheet" href="HomePage.css" />
+    <link rel="stylesheet" href="Site/HomePage/HomePage.css" />
   </head>
   <body>
     <header id="siteHeader"> <!-- Bandeau de la page -->
@@ -15,13 +15,13 @@
         </div>
 
         <div id="navLinks">
-          <a class="navLink" href="../Machines/Machines.html">Machines</a>
-          <a class="navLink" href="HomePage.html">Clean'MT</a>
-          <a class="navLink" href="../CommIMT/CommIMT.html">Comm'IMT</a>
+          <a class="navLink" href="Site/Machines/Machines.html">Machines</a>
+          <a class="navLink" href="Index.html">Clean'MT</a>
+          <a class="navLink" href="Site/CommIMT/CommIMT.html">Comm'IMT</a>
         </div>
 
         <div id="navRight" aria-label="Logo">
-          <a id="btnConnexion" href="../Connexion/Connexion.html">Se connecter</a>
+          <a id="btnConnexion" href="Site/Connexion/Connexion.html">Se connecter</a>
         </div>
       </nav>
     </header> <!-- Fin du bandeau de la page -->
@@ -34,7 +34,7 @@
               <h3 class="widgetTitle">Machines bientôt disponibles</h3>
             </div>
             <div id="machinesList" class="widgetBody" aria-label="Liste des machines"></div>
-            <a class="widgetLink" href="../Machines/Machines.html">Voir toutes les machines</a>
+            <a class="widgetLink" href="Site/Machines/Machines.html">Voir toutes les machines</a>
           </section>
 
           <section id="communityWidget" aria-label="Comm'IMT">
@@ -42,12 +42,12 @@
               <h3 class="widgetTitle">Comm'IMT</h3>
             </div>
             <div id="communityFeed" class="widgetBody" aria-label="Flux communauté"></div>
-            <a class="widgetLink" href="../CommIMT/CommIMT.html">Voir toutes les actualités</a>
+            <a class="widgetLink" href="Site/CommIMT/CommIMT.html">Voir toutes les actualités</a>
           </section>
         </div>
       </section> <!-- Fin de la partie importante -->
     </main>
-    <script src="../CommIMT/Auth.js" defer></script>
-    <script src="HomePage.js" defer></script>
+    <script src="Site/CommIMT/Auth.js" defer></script>
+    <script src="Site/HomePage/HomePage.js" defer></script>
   </body>
 </html>
