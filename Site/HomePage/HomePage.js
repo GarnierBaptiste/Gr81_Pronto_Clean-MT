@@ -143,7 +143,7 @@ function renderMachines() {
 
     const el = document.createElement("a");
     el.className = "item";
-    el.setAttribute("href", `Site/Machines/Machines.html#${encodeURIComponent(m.id)}`);
+    el.setAttribute("href", `./Machines/Machines.html#${encodeURIComponent(m.id)}`);
     el.innerHTML = `
       <div class="itemTop">
         <div class="itemTitle">${escapeHtml(m.id)}</div>

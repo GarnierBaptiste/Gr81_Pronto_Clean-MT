@@ -67,6 +67,6 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("userEmail", email);
     localStorage.setItem("userFullName", fullName);
     localStorage.setItem("isLoggedIn", "true");
-    window.location.href = "../../Index.html";
+    window.location.href = "../index.html";
   });
 });
