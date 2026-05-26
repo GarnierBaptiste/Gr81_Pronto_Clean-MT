@@ -205,7 +205,5 @@ def api_accel_logs():
 
 
 if __name__ == "__main__":
-    # Lancer: python server.py
-    # Puis ouvrir: http://127.0.0.1:8000/
     port = int(os.environ.get("PORT", "8000"))
-    app.run(host="127.0.0.1", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=False)
