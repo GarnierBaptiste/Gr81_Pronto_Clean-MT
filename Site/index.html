@@ -1,53 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pronto groupe 81</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+    <style>
+        :root {
+            --paper: #f3f1ea;
+            --ink: #2a3442;
+            --navy: #2f4a6b;
+            --border: #d6d1c6;
+            --card: rgba(255, 255, 255, 0.78);
+        }
 
-<!doctype html>
-<html lang="fr">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Clean'MT</title>
-    <link rel="stylesheet" href="HomePage/HomePage.css" />
-  </head>
-  <body>
-    <header id="siteHeader"> <!-- Bandeau de la page -->
-      <nav id="topNav" aria-label="Navigation principale">
-        <div id="navLeft">
-          <div id="navLogo" aria-hidden="true"></div>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            background: var(--paper);
+            color: var(--ink);
+        }
+
+        .material-symbols-outlined {
+            font-size: 1.2em;
+            vertical-align: middle;
+            margin-right: 0.3rem;
+        }
+
+        .hero {
+            min-height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .card {
+            width: min(720px, calc(100% - 32px));
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            max-height: calc(100vh - 32px);
+        }
+
+        .logo {
+            width: min(240px, 60vw);
+            height: auto;
+            display: block;
+            margin: 0 auto 10px;
+        }
+
+        .welcome {
+            margin: 0 0 10px;
+            font-weight: 700;
+            color: var(--navy);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(2rem, 4vw, 3rem);
+            letter-spacing: 0.02em;
+        }
+
+        .subtitle {
+            margin: 0;
+            opacity: 0.85;
+        }
+
+        .menu {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--navy);
+            background: var(--navy);
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 600;
+            line-height: 1;
+            font: inherit;
+            min-width: 190px;
+        }
+
+        .btnSecondary {
+            background: transparent;
+            color: var(--navy);
+        }
+    </style>
+</head>
+<body>
+<div class="hero">
+    <div class="card">
+        <p id="welcome" class="welcome" style="display: none"></p>
+        <img class="logo" src="image.png" alt="Logo Clean'MT" />
+        <h1>Clean'MT</h1>
+        <div class="menu">
+            <a class="btn btnSecondary" href="machine.html">Parc des machines</a>
+            <a class="btn btnSecondary" href="console.html">Console MicroPython</a>
+            <a class="btn btnSecondary" href=""><span class="material-symbols-outlined">import_contacts</span>Comm'IMT</a>
+            <a id="authBtn" class="btn" href="connexion.html">Se connecter</a>
         </div>
+    </div>
+</div>
 
-        <div id="navLinks">
-          <a class="navLink" href="Machines/Machines.html">Machines</a>
-          <a class="navLink" href="index.html">Clean'MT</a>
-          <a class="navLink" href="CommIMT/CommIMT.html">Comm'IMT</a>
-        </div>
+<script>
+    try {
+        const el = document.getElementById('welcome');
+        const raw = localStorage.getItem('currentUser');
+        const user = raw ? JSON.parse(raw) : null;
 
-        <div id="navRight" aria-label="Logo">
-          <a id="btnConnexion" href="Connexion/Connexion.html">Se connecter</a>
-        </div>
-      </nav>
-    </header> <!-- Fin du bandeau de la page -->
+        const authBtn = document.getElementById('authBtn');
 
-    <main id="main">
-      <section id="dash" aria-label="Tableau de bord"> <!-- Partie importante -->
-        <div id="dashGrid">
-          <section id="machinesWidget" aria-label="Machines bientôt disponibles">
-            <div class="widgetHeader">
-              <h3 class="widgetTitle">Machines bientôt disponibles</h3>
-            </div>
-            <div id="machinesList" class="widgetBody" aria-label="Liste des machines"></div>
-            <a class="widgetLink" href="Machines/Machines.html">Voir toutes les machines</a>
-          </section>
+        if (user && (user.prenom || user.nom)) {
+            const prenom = (user.prenom || '').trim();
+            const nom = (user.nom || '').trim();
+            el.textContent = `Bonjour ${prenom}${prenom && nom ? ' ' : ''}${nom}`;
+            el.style.display = 'block';
 
-          <section id="communityWidget" aria-label="Comm'IMT">
-            <div class="widgetHeader">
-              <h3 class="widgetTitle">Comm'IMT</h3>
-            </div>
-            <div id="communityFeed" class="widgetBody" aria-label="Flux communauté"></div>
-            <a class="widgetLink" href="CommIMT/CommIMT.html">Voir toutes les actualités</a>
-          </section>
-        </div>
-      </section> <!-- Fin de la partie importante -->
-    </main>
-    <script src="CommIMT/Auth.js" defer></script>
-    <script src="HomePage/HomePage.js" defer></script>
-  </body>
+            if (authBtn) {
+                authBtn.textContent = 'Se déconnecter';
+                authBtn.href = '#';
+                authBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('currentUser');
+                    window.location.reload();
+                });
+            }
+        }
+    } catch {
+    }
+</script>
+
+</body>
 </html>

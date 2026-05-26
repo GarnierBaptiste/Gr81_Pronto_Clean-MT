@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parc des machines</title>
+  <style>
+    :root {
+      --paper: #f3f1ea;
+      --ink: #2a3442;
+      --navy: #2f4a6b;
+      --border: #d6d1c6;
+      --card: rgba(255, 255, 255, 0.78);
+      --green: #1b6b4a;
+      --red: #8a1f2b;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 4px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--navy);
+      background: var(--navy);
+      color: #ffffff;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      font: inherit;
+      line-height: 1;
+    }
+
+    .backBtn {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      margin-top: 0;
+      z-index: 10;
+    }
+
+    main {
+      padding: 72px 16px 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      font-size: 1.6rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .machine {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .machineHeader {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .machineTitle {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    .badge {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    .badge.available {
+      border-color: rgba(27, 107, 74, 0.35);
+      color: var(--green);
+    }
+
+    .badge.running {
+      border-color: rgba(138, 31, 43, 0.35);
+      color: var(--red);
+    }
+
+    .meta {
+      display: grid;
+      gap: 6px;
+      font-size: 0.95rem;
+      opacity: 0.95;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <a class="btn backBtn" href="index.html">Retour</a>
+
+  <main>
+    <h1>Parc des machines</h1>
+    <section class="grid" id="machinesGrid"></section>
+  </main>
+
+  <script>
+    const grid = document.getElementById('machinesGrid');
+
+    function createMachineCard(index) {
+      const id = String(index).padStart(2, '0');
+      const card = document.createElement('article');
+      card.className = 'machine';
+      card.dataset.machine = id;
+
+      card.innerHTML = `
+        <div class="machineHeader">
+          <h2 class="machineTitle">Machine ${id}</h2>
+          <span class="badge available" data-role="status">Disponible</span>
+        </div>
+        <div class="meta">
+          <div>Minuteur: <span class="mono" data-role="timer">00:00:00</span></div>
+        </div>
+      `;
+
+      return card;
+    }
+
+    for (let i = 1; i <= 20; i++) {
+      grid.appendChild(createMachineCard(i));
+    }
+
+    const machine1 = grid.querySelector('[data-machine="01"]');
+    const statusEl = machine1.querySelector('[data-role="status"]');
+    const timerEl = machine1.querySelector('[data-role="timer"]');
+
+    let runningSinceMs = null;
+    let neutralStreak = 0;
+    let lastSeenTimestamp = null;
+
+    const COUNTDOWN_MS = 30 * 60 * 1000;
+
+    function formatDuration(ms) {
+      const total = Math.max(0, Math.floor(ms / 1000));
+      const h = String(Math.floor(total / 3600)).padStart(2, '0');
+      const m = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
+      const s = String(total % 60).padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
+
+    function setAvailable() {
+      statusEl.textContent = 'Disponible';
+      statusEl.classList.remove('running');
+      statusEl.classList.add('available');
+      runningSinceMs = null;
+      timerEl.textContent = '00:00:00';
+    }
+
+    function setRunning() {
+      statusEl.textContent = 'En route';
+      statusEl.classList.remove('available');
+      statusEl.classList.add('running');
+    }
+
+    function parseTimestampToMs(ts) {
+      const s = String(ts ?? '').trim();
+      if (!s) return null;
+
+      const m = s.match(
+        /^(\d{4})-(\d{1,2})-(\d{1,2})T(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?$/
+      );
+      if (!m) {
+        const ms = Date.parse(s);
+        return Number.isFinite(ms) ? ms : null;
+      }
+
+      let year = Number(m[1]);
+      let a = Number(m[2]);
+      let b = Number(m[3]);
+      const hour = Number(m[4]);
+      const minute = Number(m[5]);
+      const second = Number(m[6]);
+      const milli = Number((m[7] ?? '0').padEnd(3, '0'));
+
+      // Format du CSV: année-jour-mois (YYYY-DD-MM)
+      const day = a;
+      const month = b;
+
+      if (
+        !Number.isFinite(year) ||
+        !Number.isFinite(month) ||
+        !Number.isFinite(day) ||
+        !Number.isFinite(hour) ||
+        !Number.isFinite(minute) ||
+        !Number.isFinite(second) ||
+        !Number.isFinite(milli)
+      ) {
+        return null;
+      }
+
+      if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+
+      // Interprétation en heure locale (cohérent avec ce que tu veux afficher côté utilisateur)
+      const d = new Date(year, month - 1, day, hour, minute, second, milli);
+      const ms = d.getTime();
+      return Number.isFinite(ms) ? ms : null;
+    }
+
+    function parseCsvRows(csvText) {
+      const normalized = String(csvText ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+      const lines = normalized.split('\n').filter((l) => l.trim().length > 0);
+      if (lines.length < 2) return null;
+
+      const header = lines[0].split(',').map((s) => s.trim());
+      const tsIndex = header.indexOf('timestamp');
+      const fgIndex = header.indexOf('f_g');
+      if (tsIndex === -1 || fgIndex === -1) return null;
+
+      const rows = lines.slice(1).map((line) => {
+        const cols = line.split(',').map((s) => s.trim());
+        const ts = cols[tsIndex] ?? '';
+        const fgRaw = cols[fgIndex] ?? '';
+        const fg = Number.parseFloat(fgRaw);
+        return { ts, fg, fgRaw };
+      });
+
+      return rows;
+    }
+
+    function isNeutralFg(fg) {
+      return Number.isFinite(fg) && fg === 1.0;
+    }
+
+    function findStartAfterLastTripleNeutral(rows) {
+      if (rows.length < 4) return null;
+
+      for (let i = rows.length - 3; i >= 0; i--) {
+        const a = rows[i];
+        const b = rows[i + 1];
+        const c = rows[i + 2];
+        if (isNeutralFg(a.fg) && isNeutralFg(b.fg) && isNeutralFg(c.fg)) {
+          const next = rows[i + 3];
+          const ms = next ? parseTimestampToMs(next.ts) : null;
+          return ms;
+        }
+      }
+
+      return null;
+    }
+
+    async function pollMachine1() {
+      try {
+        const res = await fetch('donnee.csv', { cache: 'no-store' });
+        if (!res.ok) throw new Error('donnee.csv introuvable');
+        const text = await res.text();
+        const rows = parseCsvRows(text);
+        if (!rows || rows.length === 0) return;
+
+        const last = rows[rows.length - 1];
+
+        if (lastSeenTimestamp === last.ts) return;
+        lastSeenTimestamp = last.ts;
+
+        // Une fois le compte à rebours démarré, on le laisse aller jusqu'au bout.
+        // On évite ainsi de le stopper/réinitialiser à cause de retours temporaires à l'état neutre.
+        if (runningSinceMs !== null) {
+          setRunning();
+          return;
+        }
+
+        const lastIsNeutral = isNeutralFg(last.fg);
+
+        if (!lastIsNeutral) {
+          setRunning();
+
+          if (runningSinceMs === null) {
+            const start = findStartAfterLastTripleNeutral(rows);
+            const now = Date.now();
+            runningSinceMs = start && start <= now ? start : now;
+          }
+
+          neutralStreak = 0;
+        } else {
+          neutralStreak += 1;
+          if (neutralStreak >= 5) {
+            setAvailable();
+          }
+        }
+      } catch {
+      }
+    }
+
+    setAvailable();
+    pollMachine1();
+    setInterval(pollMachine1, 1000);
+
+    setInterval(() => {
+      if (runningSinceMs !== null) {
+        const remaining = Math.min(
+          COUNTDOWN_MS,
+          COUNTDOWN_MS - (Date.now() - runningSinceMs)
+        );
+        if (remaining <= 0) {
+          neutralStreak = 0;
+          setAvailable();
+          return;
+        }
+        timerEl.textContent = formatDuration(remaining);
+      }
+    }, 250);
+  </script>
+</body>
+</html>

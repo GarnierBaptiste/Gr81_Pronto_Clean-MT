@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Connexion</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: #f3f1ea;
+      color: #2a3442;
+    }
+
+    .card {
+      width: min(420px, calc(100% - 32px));
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid #d6d1c6;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      font-size: 1.3rem;
+    }
+
+    form {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 0.95rem;
+    }
+
+    input {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #bdb8ad;
+      background: #ffffff;
+      color: inherit;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #2f4a6b;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 4px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #2f4a6b;
+      background: #2f4a6b;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      font: inherit;
+      line-height: 1;
+    }
+
+    .backBtn {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      margin-top: 0;
+      z-index: 10;
+    }
+
+    .navLink {
+      color: inherit;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+<a class="btn backBtn" href="index.html">Retour à la page principale</a>
+  <div class="card">
+    <h1>Se connecter</h1>
+    <form id="loginForm">
+      <label>
+        Email
+        <input type="text" name="login" autocomplete="username" required />
+      </label>
+
+      <label>
+        Mot de passe
+        <input type="password" name="password" autocomplete="current-password" required />
+      </label>
+
+      <div>
+        <button class="btn" type="submit">Connexion</button>
+        <a class="btn" href="inscription.html">Inscription</a>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const loginForm = document.getElementById('loginForm');
+
+    function normalizeLineEndings(text) {
+      return String(text ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    }
+
+    async function readCsv() {
+      const res = await fetch('connexion.csv', { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Error('Impossible de lire connexion.csv');
+      }
+      return await res.text();
+    }
+
+    function parseCsvSemicolon(csvText) {
+      const normalized = normalizeLineEndings(csvText).trim();
+      if (!normalized) return { header: [], rows: [] };
+      const lines = normalized.split('\n').filter((l) => l.trim().length > 0);
+      const header = (lines[0] ?? '').split(';').map((s) => s.trim());
+      const rows = lines.slice(1).map((line) => line.split(';').map((s) => s.trim()));
+      return { header, rows };
+    }
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = loginForm.elements.login.value.trim().toLowerCase();
+      const password = loginForm.elements.password.value;
+
+      try {
+        const csvText = await readCsv();
+        const { rows } = parseCsvSemicolon(csvText);
+
+        const userRow = rows.find((cols) => (cols[0] ?? '').toLowerCase() === email);
+
+        if (!userRow) {
+          alert('Email inconnu.');
+          return;
+        }
+
+        const storedPassword = userRow[1] ?? '';
+        if (storedPassword !== password) {
+          alert('Mot de passe incorrect.');
+          return;
+        }
+
+        const nom = userRow[2] ?? '';
+        const prenom = userRow[3] ?? '';
+        localStorage.setItem(
+          'currentUser',
+          JSON.stringify({ mail: email, nom, prenom, loggedInAt: Date.now() })
+        );
+
+        window.location.href = 'index.html';
+      } catch {
+        alert("Erreur: impossible de vérifier les identifiants. Lance la page via un serveur local (ex: Live Server) pour pouvoir lire connexion.csv.");
+      }
+    });
+  </script>
+</body>
+</html>
