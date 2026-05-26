@@ -114,7 +114,7 @@
     }
 
     async function readCsv() {
-      const res = await fetch('connexion.csv', { cache: 'no-store' });
+      const res = await fetch('https://gr81-pronto-clean-mt.onrender.com/connexion.csv', { cache: 'no-store' });
       if (!res.ok) {
         throw new Error('Impossible de lire connexion.csv');
       }
@@ -162,7 +162,7 @@
 
         window.location.href = 'index.html';
       } catch {
-        alert("Erreur: impossible de vérifier les identifiants. Lance la page via un serveur local (ex: Live Server) pour pouvoir lire connexion.csv.");
+        alert("Erreur: impossible de vérifier les identifiants. Erreur lors de la connexion.");
       }
     });
   </script>

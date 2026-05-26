@@ -185,7 +185,7 @@
       submitBtn.disabled = true;
 
       try {
-        const res = await fetch('/api/inscription', {
+        const res = await fetch('https://gr81-pronto-clean-mt.onrender.com/api/inscription', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mail, password })
@@ -204,7 +204,7 @@
         setStatus("Inscription réussie. Redirection...", 'success');
         window.location.href = 'connexion.html';
       } catch {
-        setStatus("Erreur: impossible de contacter le serveur. Lance server.py puis réessaie.", 'error');
+        setStatus("Erreur: impossible de contacter le serveur. Erreur lors de la connexion au serveur.", 'error');
       } finally {
         submitBtn.disabled = false;
       }
