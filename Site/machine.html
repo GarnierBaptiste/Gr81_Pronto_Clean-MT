@@ -59,40 +59,73 @@
       font-size: 1.6rem;
     }
 
-    .grid {
+    /* Disposition en U */
+    .u-layout {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-areas:
+        "left top-row top-row top-row top-row right"
+        "left .        .        .        .       right"
+        "left .        .        .        .       right";
+      grid-template-columns: 150px 1fr 1fr 1fr 1fr 150px;
       gap: 12px;
+    }
+
+    .u-left {
+      grid-area: left;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      justify-content: flex-start;
+    }
+
+    .u-top {
+      grid-area: top-row;
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+      justify-content: flex-start;
+    }
+
+    .u-top .machine {
+      flex: 1;
+    }
+
+    .u-right {
+      grid-area: right;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      justify-content: flex-start;
     }
 
     .machine {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 14px;
+      border-radius: 10px;
+      padding: 8px 10px;
       display: grid;
-      gap: 10px;
+      gap: 5px;
     }
 
     .machineHeader {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
-      gap: 10px;
+      gap: 6px;
     }
 
     .machineTitle {
       margin: 0;
-      font-size: 1.05rem;
+      font-size: 0.85rem;
     }
 
     .badge {
-      padding: 6px 10px;
+      padding: 3px 7px;
       border-radius: 999px;
       border: 1px solid var(--border);
       background: #ffffff;
       font-weight: 700;
-      font-size: 0.85rem;
+      font-size: 0.72rem;
       white-space: nowrap;
     }
 
@@ -115,7 +148,7 @@
 
     .mono {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 0.9rem;
+      font-size: 0.78rem;
     }
   </style>
 </head>
@@ -124,35 +157,49 @@
 
   <main>
     <h1>Parc des machines</h1>
-    <section class="grid" id="machinesGrid"></section>
+    <div class="u-layout" id="machinesLayout">
+      <div class="u-left" id="leftCol"></div>
+      <div class="u-top" id="topRow"></div>
+      <div class="u-right" id="rightCol"></div>
+    </div>
   </main>
 
   <script>
     const RENDER_URL = 'https://gr81-pronto-clean-mt.onrender.com';
-    const COUNTDOWN_MS = 30 * 60 * 1000;
+    const COUNTDOWN_MS = 47 * 60 * 1000;
 
-    const grid = document.getElementById('machinesGrid');
+    const leftCol  = document.getElementById('leftCol');
+    const topRow   = document.getElementById('topRow');
+    const rightCol = document.getElementById('rightCol');
 
-    function createMachineCard(index) {
-      const id = String(index).padStart(2, '0');
+    // Machines par zone selon la photo (U)
+    const LEFT_MACHINES  = [11, 10, 29];          // bras gauche, de haut en bas
+    const TOP_MACHINES   = [12, 13, 14, 15];      // barre du haut, gauche → droite
+    const RIGHT_MACHINES = [16, 17, 18, 19, 20];  // bras droit, de haut en bas
+
+    function createMachineCard(num) {
+      const id = String(num).padStart(2, '0');
       const card = document.createElement('article');
       card.className = 'machine';
       card.dataset.machine = id;
       card.innerHTML = `
         <div class="machineHeader">
-          <h2 class="machineTitle">Machine ${id}</h2>
+          <h2 class="machineTitle">M${num}</h2>
           <span class="badge available" data-role="status">Disponible</span>
         </div>
         <div class="meta">
-          <div>Minuteur: <span class="mono" data-role="timer">00:00:00</span></div>
+          <div><span class="mono" data-role="timer">00:00:00</span></div>
         </div>
       `;
       return card;
     }
 
-    for (let i = 1; i <= 20; i++) grid.appendChild(createMachineCard(i));
+    LEFT_MACHINES.forEach(n  => leftCol.appendChild(createMachineCard(n)));
+    TOP_MACHINES.forEach(n   => topRow.appendChild(createMachineCard(n)));
+    RIGHT_MACHINES.forEach(n => rightCol.appendChild(createMachineCard(n)));
 
-    const machine1  = grid.querySelector('[data-machine="01"]');
+    // Machine 1 = machine 29 (première du bras gauche) pour le capteur physique
+    const machine1  = leftCol.querySelector('[data-machine="29"]');
     const statusEl  = machine1.querySelector('[data-role="status"]');
     const timerEl   = machine1.querySelector('[data-role="timer"]');
 
