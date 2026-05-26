@@ -128,6 +128,9 @@
   </main>
 
   <script>
+    const RENDER_URL = 'https://gr81-pronto-clean-mt.onrender.com';
+    const COUNTDOWN_MS = 30 * 60 * 1000;
+
     const grid = document.getElementById('machinesGrid');
 
     function createMachineCard(index) {
@@ -135,7 +138,6 @@
       const card = document.createElement('article');
       card.className = 'machine';
       card.dataset.machine = id;
-
       card.innerHTML = `
         <div class="machineHeader">
           <h2 class="machineTitle">Machine ${id}</h2>
@@ -145,23 +147,19 @@
           <div>Minuteur: <span class="mono" data-role="timer">00:00:00</span></div>
         </div>
       `;
-
       return card;
     }
 
-    for (let i = 1; i <= 20; i++) {
-      grid.appendChild(createMachineCard(i));
-    }
+    for (let i = 1; i <= 20; i++) grid.appendChild(createMachineCard(i));
 
-    const machine1 = grid.querySelector('[data-machine="01"]');
-    const statusEl = machine1.querySelector('[data-role="status"]');
-    const timerEl = machine1.querySelector('[data-role="timer"]');
+    const machine1  = grid.querySelector('[data-machine="01"]');
+    const statusEl  = machine1.querySelector('[data-role="status"]');
+    const timerEl   = machine1.querySelector('[data-role="timer"]');
 
-    let runningSinceMs = null;
-    let neutralStreak = 0;
+    let runningSinceMs    = null;
+    let neutralStreak     = 0;
     let lastSeenTimestamp = null;
-
-    const COUNTDOWN_MS = 30 * 60 * 1000;
+    let lastOverride      = null;   // dernier état reçu depuis /api/machine1/state
 
     function formatDuration(ms) {
       const total = Math.max(0, Math.floor(ms / 1000));
@@ -179,158 +177,112 @@
       timerEl.textContent = '00:00:00';
     }
 
-    function setRunning() {
+    function setRunning(sinceMs) {
       statusEl.textContent = 'En route';
       statusEl.classList.remove('available');
       statusEl.classList.add('running');
+      if (runningSinceMs === null) {
+        runningSinceMs = sinceMs ?? Date.now();
+      }
     }
 
+    // ── Poll /api/machine1/state (override admin) ──────────────────────────
+    async function pollAdminState() {
+      try {
+        const res = await fetch(`${RENDER_URL}/api/machine1/state`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const override = data.override;
+
+        if (override === lastOverride) return;
+        lastOverride = override;
+
+        if (override === 'running' && runningSinceMs === null) {
+          setRunning(Date.now());
+        } else if (override === 'reset') {
+          neutralStreak = 0;
+          setAvailable();
+        }
+      } catch { }
+    }
+
+    // ── Poll donnee.csv (capteur physique) ────────────────────────────────
     function parseTimestampToMs(ts) {
       const s = String(ts ?? '').trim();
       if (!s) return null;
-
-      const m = s.match(
-        /^(\d{4})-(\d{1,2})-(\d{1,2})T(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?$/
-      );
-      if (!m) {
-        const ms = Date.parse(s);
-        return Number.isFinite(ms) ? ms : null;
-      }
-
-      let year = Number(m[1]);
-      let a = Number(m[2]);
-      let b = Number(m[3]);
-      const hour = Number(m[4]);
-      const minute = Number(m[5]);
-      const second = Number(m[6]);
-      const milli = Number((m[7] ?? '0').padEnd(3, '0'));
-
-      // Format du CSV: année-jour-mois (YYYY-DD-MM)
-      const day = a;
-      const month = b;
-
-      if (
-        !Number.isFinite(year) ||
-        !Number.isFinite(month) ||
-        !Number.isFinite(day) ||
-        !Number.isFinite(hour) ||
-        !Number.isFinite(minute) ||
-        !Number.isFinite(second) ||
-        !Number.isFinite(milli)
-      ) {
-        return null;
-      }
-
+      const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})T(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?$/);
+      if (!m) { const ms = Date.parse(s); return Number.isFinite(ms) ? ms : null; }
+      const day = Number(m[2]), month = Number(m[3]);
       if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-
-      // Interprétation en heure locale (cohérent avec ce que tu veux afficher côté utilisateur)
-      const d = new Date(year, month - 1, day, hour, minute, second, milli);
+      const d = new Date(Number(m[1]), month - 1, day, Number(m[4]), Number(m[5]), Number(m[6]), Number((m[7] ?? '0').padEnd(3, '0')));
       const ms = d.getTime();
       return Number.isFinite(ms) ? ms : null;
     }
 
     function parseCsvRows(csvText) {
-      const normalized = String(csvText ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-      const lines = normalized.split('\n').filter((l) => l.trim().length > 0);
+      const lines = String(csvText ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim().split('\n').filter(l => l.trim());
       if (lines.length < 2) return null;
-
-      const header = lines[0].split(',').map((s) => s.trim());
+      const header = lines[0].split(',').map(s => s.trim());
       const tsIndex = header.indexOf('timestamp');
       const fgIndex = header.indexOf('f_g');
       if (tsIndex === -1 || fgIndex === -1) return null;
-
-      const rows = lines.slice(1).map((line) => {
-        const cols = line.split(',').map((s) => s.trim());
-        const ts = cols[tsIndex] ?? '';
-        const fgRaw = cols[fgIndex] ?? '';
-        const fg = Number.parseFloat(fgRaw);
-        return { ts, fg, fgRaw };
+      return lines.slice(1).map(line => {
+        const cols = line.split(',').map(s => s.trim());
+        return { ts: cols[tsIndex] ?? '', fg: Number.parseFloat(cols[fgIndex] ?? '') };
       });
-
-      return rows;
     }
 
-    function isNeutralFg(fg) {
-      return Number.isFinite(fg) && fg === 1.0;
-    }
+    function isNeutral(fg) { return Number.isFinite(fg) && fg === 1.0; }
 
     function findStartAfterLastTripleNeutral(rows) {
-      if (rows.length < 4) return null;
-
       for (let i = rows.length - 3; i >= 0; i--) {
-        const a = rows[i];
-        const b = rows[i + 1];
-        const c = rows[i + 2];
-        if (isNeutralFg(a.fg) && isNeutralFg(b.fg) && isNeutralFg(c.fg)) {
+        if (isNeutral(rows[i].fg) && isNeutral(rows[i+1].fg) && isNeutral(rows[i+2].fg)) {
           const next = rows[i + 3];
-          const ms = next ? parseTimestampToMs(next.ts) : null;
-          return ms;
+          return next ? parseTimestampToMs(next.ts) : null;
         }
       }
-
       return null;
     }
 
     async function pollMachine1() {
       try {
-        const res = await fetch('donnee.csv', { cache: 'no-store' });
-        if (!res.ok) throw new Error('donnee.csv introuvable');
-        const text = await res.text();
-        const rows = parseCsvRows(text);
+        const res = await fetch(`${RENDER_URL}/donnee.csv`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const rows = parseCsvRows(await res.text());
         if (!rows || rows.length === 0) return;
 
         const last = rows[rows.length - 1];
-
         if (lastSeenTimestamp === last.ts) return;
         lastSeenTimestamp = last.ts;
 
-        // Une fois le compte à rebours démarré, on le laisse aller jusqu'au bout.
-        // On évite ainsi de le stopper/réinitialiser à cause de retours temporaires à l'état neutre.
-        if (runningSinceMs !== null) {
-          setRunning();
-          return;
-        }
+        if (runningSinceMs !== null) { setRunning(); return; }
 
-        const lastIsNeutral = isNeutralFg(last.fg);
-
-        if (!lastIsNeutral) {
-          setRunning();
-
-          if (runningSinceMs === null) {
-            const start = findStartAfterLastTripleNeutral(rows);
-            const now = Date.now();
-            runningSinceMs = start && start <= now ? start : now;
-          }
-
+        if (!isNeutral(last.fg)) {
+          const start = findStartAfterLastTripleNeutral(rows);
+          const now = Date.now();
+          setRunning(start && start <= now ? start : now);
           neutralStreak = 0;
         } else {
           neutralStreak += 1;
-          if (neutralStreak >= 5) {
-            setAvailable();
-          }
+          if (neutralStreak >= 5) setAvailable();
         }
-      } catch {
-      }
+      } catch { }
     }
 
-    setAvailable();
-    pollMachine1();
-    setInterval(pollMachine1, 1000);
-
+    // ── Tick minuteur ─────────────────────────────────────────────────────
     setInterval(() => {
-      if (runningSinceMs !== null) {
-        const remaining = Math.min(
-          COUNTDOWN_MS,
-          COUNTDOWN_MS - (Date.now() - runningSinceMs)
-        );
-        if (remaining <= 0) {
-          neutralStreak = 0;
-          setAvailable();
-          return;
-        }
-        timerEl.textContent = formatDuration(remaining);
-      }
+      if (runningSinceMs === null) return;
+      const remaining = COUNTDOWN_MS - (Date.now() - runningSinceMs);
+      if (remaining <= 0) { neutralStreak = 0; setAvailable(); return; }
+      timerEl.textContent = formatDuration(remaining);
     }, 250);
+
+    // ── Démarrage ─────────────────────────────────────────────────────────
+    setAvailable();
+    pollAdminState();
+    pollMachine1();
+    setInterval(pollAdminState, 1000);   // vérifie l'admin toutes les secondes
+    setInterval(pollMachine1,   1000);
   </script>
 </body>
 </html>
