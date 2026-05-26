@@ -21,6 +21,7 @@ _calibration: dict[str, float] | None = None
 
 _accel_logs: list[str] = []
 _ACCEL_LOGS_MAX = 300
+_machine1_override: str | None = None  # "running" | "reset" | None
 
 
 def ensure_csv_exists() -> None:
@@ -205,5 +206,28 @@ def api_accel_logs():
 
 
 if __name__ == "__main__":
+    # Lancer: python server.py
+    # Puis ouvrir: http://127.0.0.1:8000/
     port = int(os.environ.get("PORT", "8000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
+
+@app.post("/api/machine1/start")
+def api_machine1_start():
+    global _machine1_override
+    _machine1_override = "running"
+    return jsonify({"ok": True, "state": "running"})
+
+
+@app.post("/api/machine1/reset")
+def api_machine1_reset():
+    global _machine1_override, _calibration
+    _machine1_override = "reset"
+    # Réinitialise aussi la calibration pour que le prochain envoi recalibre
+    _calibration = None
+    return jsonify({"ok": True, "state": "reset"})
+
+
+@app.get("/api/machine1/state")
+def api_machine1_state():
+    return jsonify({"ok": True, "override": _machine1_override})

@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin – Clean'MT</title>
+  <style>
+    :root {
+      --paper: #f3f1ea;
+      --ink: #2a3442;
+      --navy: #2f4a6b;
+      --border: #d6d1c6;
+      --card: rgba(255, 255, 255, 0.78);
+      --green: #1b6b4a;
+      --green-border: rgba(27, 107, 74, 0.35);
+      --red: #8a1f2b;
+      --red-border: rgba(138, 31, 43, 0.35);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+    }
+
+    .card {
+      width: min(480px, calc(100% - 32px));
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px 24px;
+      display: grid;
+      gap: 24px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.3rem;
+    }
+
+    .badge {
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+
+    .badge.available {
+      border-color: var(--green-border);
+      color: var(--green);
+    }
+
+    .badge.running {
+      border-color: var(--red-border);
+      color: var(--red);
+    }
+
+    .machine-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .machine-label {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .timer {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 1.1rem;
+      color: var(--navy);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 16px;
+      border-radius: 10px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-start {
+      background: var(--green);
+      color: #fff;
+    }
+
+    .btn-reset {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--navy);
+      background: transparent;
+      color: var(--navy);
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .feedback {
+      font-size: 0.9rem;
+      text-align: center;
+      min-height: 1.4em;
+      opacity: 0.85;
+    }
+
+    .feedback.success { color: var(--green); }
+    .feedback.error   { color: var(--red); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-header">
+      <h1>Administration</h1>
+      <a class="btn-back" href="index.html">← Accueil</a>
+    </div>
+
+    <div class="machine-info">
+      <span class="machine-label">Machine 01</span>
+      <span id="statusBadge" class="badge available">Disponible</span>
+      <span id="timerDisplay" class="timer">00:00:00</span>
+    </div>
+
+    <div class="actions">
+      <button id="btnStart" class="btn btn-start" onclick="handleStart()">▶ En marche</button>
+      <button id="btnReset" class="btn btn-reset" onclick="handleReset()">⏹ Reset</button>
+    </div>
+
+    <p id="feedback" class="feedback"></p>
+  </div>
+
+  <script>
+    const RENDER_URL = 'https://gr81-pronto-clean-mt.onrender.com';
+    const COUNTDOWN_MS = 30 * 60 * 1000;
+
+    const statusBadge  = document.getElementById('statusBadge');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const feedback     = document.getElementById('feedback');
+    const btnStart     = document.getElementById('btnStart');
+    const btnReset     = document.getElementById('btnReset');
+
+    let runningSinceMs = null;
+    let timerInterval  = null;
+
+    function setFeedback(msg, kind) {
+      feedback.textContent = msg;
+      feedback.className = 'feedback' + (kind ? ' ' + kind : '');
+      if (msg) setTimeout(() => { feedback.textContent = ''; feedback.className = 'feedback'; }, 3000);
+    }
+
+    function formatDuration(ms) {
+      const total = Math.max(0, Math.floor(ms / 1000));
+      const h = String(Math.floor(total / 3600)).padStart(2, '0');
+      const m = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
+      const s = String(total % 60).padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
+
+    function startTimer() {
+      runningSinceMs = Date.now();
+      statusBadge.textContent = 'En route';
+      statusBadge.className = 'badge running';
+
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        const remaining = COUNTDOWN_MS - (Date.now() - runningSinceMs);
+        if (remaining <= 0) {
+          resetTimer();
+          return;
+        }
+        timerDisplay.textContent = formatDuration(remaining);
+      }, 250);
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      runningSinceMs = null;
+      timerDisplay.textContent = '00:00:00';
+      statusBadge.textContent = 'Disponible';
+      statusBadge.className = 'badge available';
+    }
+
+    async function handleStart() {
+      btnStart.disabled = true;
+      try {
+        const res = await fetch(`${RENDER_URL}/api/machine1/start`, { method: 'POST' });
+        if (!res.ok) throw new Error();
+        startTimer();
+        setFeedback('Machine 01 démarrée.', 'success');
+      } catch {
+        setFeedback('Impossible de contacter le serveur.', 'error');
+      } finally {
+        btnStart.disabled = false;
+      }
+    }
+
+    async function handleReset() {
+      btnReset.disabled = true;
+      try {
+        const res = await fetch(`${RENDER_URL}/api/machine1/reset`, { method: 'POST' });
+        if (!res.ok) throw new Error();
+        resetTimer();
+        setFeedback('Machine 01 réinitialisée.', 'success');
+      } catch {
+        setFeedback('Impossible de contacter le serveur.', 'error');
+      } finally {
+        btnReset.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
