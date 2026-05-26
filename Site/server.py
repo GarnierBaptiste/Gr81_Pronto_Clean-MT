@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from flask import Flask, jsonify, request, send_from_directory
+from flask_cors import CORS
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -14,6 +15,14 @@ CSV_PATH = BASE_DIR / "connexion.csv"
 DONNEE_PATH = BASE_DIR / "donnee.csv"
 
 app = Flask(__name__, static_folder=None)
+
+CORS(app, origins=[
+    "https://cleanmt.fr",
+    "https://www.cleanmt.fr",
+    "https://gr81-pronto-clean-mt.vercel.app",
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+])
 
 
 SEUIL = 0.15
