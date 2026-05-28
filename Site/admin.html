@@ -31,13 +31,13 @@
     }
 
     .card {
-      width: min(480px, calc(100% - 32px));
+      width: min(520px, calc(100% - 32px));
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 14px;
       padding: 28px 24px;
       display: grid;
-      gap: 24px;
+      gap: 20px;
     }
 
     .card-header {
@@ -72,6 +72,62 @@
       color: var(--red);
     }
 
+    /* ── Config form ── */
+    .config-section {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .config-title {
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--navy);
+      margin: 0 0 2px;
+    }
+
+    .field {
+      display: grid;
+      gap: 5px;
+    }
+
+    .field label {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .field select,
+    .field input[type="number"],
+    .field input[type="text"] {
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.95rem;
+      background: #fff;
+      color: var(--ink);
+      width: 100%;
+    }
+
+    .field select:focus,
+    .field input:focus {
+      outline: 2px solid var(--navy);
+      outline-offset: 1px;
+    }
+
+    .fields-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* ── Machine status ── */
     .machine-info {
       display: flex;
       align-items: center;
@@ -163,8 +219,43 @@
       <a class="btn-back" href="index.html">← Accueil</a>
     </div>
 
+    <!-- ── Paramètres de lancement ── -->
+    <div class="config-section">
+      <p class="config-title">Paramètres</p>
+
+      <div class="fields-row">
+        <div class="field">
+          <label for="machineSelect">Numéro de machine</label>
+          <select id="machineSelect">
+            <option value="11">Machine 11</option>
+            <option value="12">Machine 12</option>
+            <option value="13">Machine 13</option>
+            <option value="14">Machine 14</option>
+            <option value="15">Machine 15</option>
+            <option value="16">Machine 16</option>
+            <option value="17">Machine 17</option>
+            <option value="18">Machine 18</option>
+            <option value="19">Machine 19</option>
+            <option value="20">Machine 20</option>
+            <option value="29" selected>Machine 29</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="durationInput">Durée (minutes)</label>
+          <input type="number" id="durationInput" min="1" max="999" value="47" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="labelInput">Texte affiché sur la machine</label>
+        <input type="text" id="labelInput" maxlength="60" placeholder="ex : Lavage en cours – Jean D." />
+      </div>
+    </div>
+
+    <!-- ── État en temps réel ── -->
     <div class="machine-info">
-      <span class="machine-label">Machine 01</span>
+      <span id="machineLabel" class="machine-label">Machine 29</span>
       <span id="statusBadge" class="badge available">Disponible</span>
       <span id="timerDisplay" class="timer">00:00:00</span>
     </div>
@@ -178,17 +269,26 @@
   </div>
 
   <script>
-    const RENDER_URL = 'https://gr81-pronto-clean-mt.onrender.com';
-    const COUNTDOWN_MS = 30 * 60 * 1000;
-
-    const statusBadge  = document.getElementById('statusBadge');
-    const timerDisplay = document.getElementById('timerDisplay');
-    const feedback     = document.getElementById('feedback');
-    const btnStart     = document.getElementById('btnStart');
-    const btnReset     = document.getElementById('btnReset');
+    //const RENDER_URL = 'https://gr81-pronto-clean-mt.onrender.com';
+    const RENDER_URL = 'http://127.0.0.1:8000';
+    const statusBadge   = document.getElementById('statusBadge');
+    const timerDisplay  = document.getElementById('timerDisplay');
+    const machineLabelEl = document.getElementById('machineLabel');
+    const feedback      = document.getElementById('feedback');
+    const btnStart      = document.getElementById('btnStart');
+    const btnReset      = document.getElementById('btnReset');
+    const machineSelect = document.getElementById('machineSelect');
+    const durationInput = document.getElementById('durationInput');
+    const labelInput    = document.getElementById('labelInput');
 
     let runningSinceMs = null;
     let timerInterval  = null;
+    let countdownMs    = 47 * 60 * 1000;
+
+    // Met à jour le label affiché quand on change la machine
+    machineSelect.addEventListener('change', () => {
+      machineLabelEl.textContent = `Machine ${machineSelect.value}`;
+    });
 
     function setFeedback(msg, kind) {
       feedback.textContent = msg;
@@ -211,7 +311,7 @@
 
       clearInterval(timerInterval);
       timerInterval = setInterval(() => {
-        const remaining = COUNTDOWN_MS - (Date.now() - runningSinceMs);
+        const remaining = countdownMs - (Date.now() - runningSinceMs);
         if (remaining <= 0) {
           resetTimer();
           return;
@@ -229,12 +329,23 @@
     }
 
     async function handleStart() {
+      const machineNum = machineSelect.value;
+      const minutes    = parseInt(durationInput.value, 10) || 47;
+      const label      = labelInput.value.trim();
+
+      countdownMs = minutes * 60 * 1000;
+      machineLabelEl.textContent = `Machine ${machineNum}`;
+
       btnStart.disabled = true;
       try {
-        const res = await fetch(`${RENDER_URL}/api/machine1/start`, { method: 'POST' });
+        const res = await fetch(`${RENDER_URL}/api/machine/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ machine: machineNum, duration: minutes, label })
+        });
         if (!res.ok) throw new Error();
         startTimer();
-        setFeedback('Machine 01 démarrée.', 'success');
+        setFeedback(`Machine ${machineNum} démarrée (${minutes} min).`, 'success');
       } catch {
         setFeedback('Impossible de contacter le serveur.', 'error');
       } finally {
@@ -243,12 +354,17 @@
     }
 
     async function handleReset() {
+      const machineNum = machineSelect.value;
       btnReset.disabled = true;
       try {
-        const res = await fetch(`${RENDER_URL}/api/machine1/reset`, { method: 'POST' });
+        const res = await fetch(`${RENDER_URL}/api/machine/reset`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ machine: machineNum })
+        });
         if (!res.ok) throw new Error();
         resetTimer();
-        setFeedback('Machine 01 réinitialisée.', 'success');
+        setFeedback(`Machine ${machineNum} réinitialisée.`, 'success');
       } catch {
         setFeedback('Impossible de contacter le serveur.', 'error');
       } finally {

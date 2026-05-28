@@ -64,10 +64,23 @@
       display: grid;
       grid-template-areas:
         "left top-row top-row top-row top-row right"
-        "left .        .        .        .       right"
+        "left .        center   center   .       right"
         "left .        .        .        .       right";
       grid-template-columns: 150px 1fr 1fr 1fr 1fr 150px;
+      grid-template-rows: auto auto auto;
       gap: 12px;
+    }
+
+    .u-center {
+      grid-area: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .u-center .machine {
+      width: 100%;
+      max-width: 260px;
     }
 
     .u-left {
@@ -112,11 +125,33 @@
       align-items: baseline;
       justify-content: space-between;
       gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .machineTitleGroup {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      min-width: 0;
     }
 
     .machineTitle {
       margin: 0;
       font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    /* Texte personnalisé affiché à côté du nom quand en marche */
+    .machineCustomLabel {
+      font-size: 0.75rem;
+      font-style: italic;
+      color: var(--red);
+      opacity: 0.85;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100px;
+      display: none; /* caché par défaut, affiché en .running */
     }
 
     .badge {
@@ -161,21 +196,24 @@
       <div class="u-left" id="leftCol"></div>
       <div class="u-top" id="topRow"></div>
       <div class="u-right" id="rightCol"></div>
+      <div class="u-center" id="centerZone"></div>
     </div>
   </main>
 
   <script>
-    const RENDER_URL = 'https://gr81-pronto-clean-mt.onrender.com';
-    const COUNTDOWN_MS = 47 * 60 * 1000;
+    //const RENDER_URL = 'https://gr81-pronto-clean-mt.onrender.com';
+    const RENDER_URL = 'http://127.0.0.1:8000';
 
-    const leftCol  = document.getElementById('leftCol');
-    const topRow   = document.getElementById('topRow');
-    const rightCol = document.getElementById('rightCol');
+    const leftCol   = document.getElementById('leftCol');
+    const topRow    = document.getElementById('topRow');
+    const rightCol  = document.getElementById('rightCol');
+    const centerZone = document.getElementById('centerZone');
 
     // Machines par zone selon la photo (U)
-    const LEFT_MACHINES  = [11, 10, 29];          // bras gauche, de haut en bas
-    const TOP_MACHINES   = [12, 13, 14, 15];      // barre du haut, gauche → droite
-    const RIGHT_MACHINES = [16, 17, 18, 19, 20];  // bras droit, de haut en bas
+    const LEFT_MACHINES   = [11, 10, 29];
+    const TOP_MACHINES    = [12, 13, 14, 15];
+    const RIGHT_MACHINES  = [16, 17, 18, 19, 20];
+    const CENTER_MACHINES = [1];
 
     function createMachineCard(num) {
       const id = String(num).padStart(2, '0');
@@ -184,7 +222,10 @@
       card.dataset.machine = id;
       card.innerHTML = `
         <div class="machineHeader">
-          <h2 class="machineTitle">M${num}</h2>
+          <div class="machineTitleGroup">
+            <h2 class="machineTitle">M${num}</h2>
+            <span class="machineCustomLabel" data-role="customLabel"></span>
+          </div>
           <span class="badge available" data-role="status">Disponible</span>
         </div>
         <div class="meta">
@@ -194,19 +235,27 @@
       return card;
     }
 
-    LEFT_MACHINES.forEach(n  => leftCol.appendChild(createMachineCard(n)));
-    TOP_MACHINES.forEach(n   => topRow.appendChild(createMachineCard(n)));
-    RIGHT_MACHINES.forEach(n => rightCol.appendChild(createMachineCard(n)));
+    LEFT_MACHINES.forEach(n   => leftCol.appendChild(createMachineCard(n)));
+    TOP_MACHINES.forEach(n    => topRow.appendChild(createMachineCard(n)));
+    RIGHT_MACHINES.forEach(n  => rightCol.appendChild(createMachineCard(n)));
+    CENTER_MACHINES.forEach(n => centerZone.appendChild(createMachineCard(n)));
 
-    // Machine 1 = machine 29 (première du bras gauche) pour le capteur physique
-    const machine1  = leftCol.querySelector('[data-machine="29"]');
-    const statusEl  = machine1.querySelector('[data-role="status"]');
-    const timerEl   = machine1.querySelector('[data-role="timer"]');
+    // ── État par machine ───────────────────────────────────────────────────
+    // { machineId -> { runningSinceMs, countdownMs, lastOverride } }
+    const machineState = {};
 
-    let runningSinceMs    = null;
-    let neutralStreak     = 0;
-    let lastSeenTimestamp = null;
-    let lastOverride      = null;   // dernier état reçu depuis /api/machine1/state
+    function getCard(machineNum) {
+      const id = String(machineNum).padStart(2, '0');
+      return document.querySelector(`[data-machine="${id}"]`);
+    }
+
+    function initState(machineNum) {
+      const id = String(machineNum).padStart(2, '0');
+      if (!machineState[id]) {
+        machineState[id] = { runningSinceMs: null, countdownMs: 47 * 60 * 1000, lastOverride: null };
+      }
+      return machineState[id];
+    }
 
     function formatDuration(ms) {
       const total = Math.max(0, Math.floor(ms / 1000));
@@ -216,44 +265,67 @@
       return `${h}:${m}:${s}`;
     }
 
-    function setAvailable() {
+    function setAvailable(card, state) {
+      state.runningSinceMs = null;
+      const statusEl     = card.querySelector('[data-role="status"]');
+      const timerEl      = card.querySelector('[data-role="timer"]');
+      const customLabelEl = card.querySelector('[data-role="customLabel"]');
       statusEl.textContent = 'Disponible';
-      statusEl.classList.remove('running');
-      statusEl.classList.add('available');
-      runningSinceMs = null;
-      timerEl.textContent = '00:00:00';
+      statusEl.className   = 'badge available';
+      timerEl.textContent  = '00:00:00';
+      customLabelEl.style.display = 'none';
+      customLabelEl.textContent   = '';
     }
 
-    function setRunning(sinceMs) {
+    function setRunning(card, state, sinceMs, label) {
+      if (state.runningSinceMs === null) {
+        state.runningSinceMs = sinceMs ?? Date.now();
+      }
+      const statusEl      = card.querySelector('[data-role="status"]');
+      const customLabelEl = card.querySelector('[data-role="customLabel"]');
       statusEl.textContent = 'En route';
-      statusEl.classList.remove('available');
-      statusEl.classList.add('running');
-      if (runningSinceMs === null) {
-        runningSinceMs = sinceMs ?? Date.now();
+      statusEl.className   = 'badge running';
+
+      if (label !== undefined && label !== null) {
+        customLabelEl.textContent   = label;
+        customLabelEl.style.display = label ? 'inline' : 'none';
       }
     }
 
-    // ── Poll /api/machine1/state (override admin) ──────────────────────────
-    async function pollAdminState() {
+    // ── Poll état admin (toutes les machines) ─────────────────────────────
+    async function pollAllAdminStates() {
       try {
-        const res = await fetch(`${RENDER_URL}/api/machine1/state`, { cache: 'no-store' });
+        const res = await fetch(`${RENDER_URL}/api/machines/state`, { cache: 'no-store' });
         if (!res.ok) return;
-        const data = await res.json();
-        const override = data.override;
+        const data = await res.json();  // { machines: { "29": { override, duration, label }, ... } }
+        const machines = data.machines ?? {};
 
-        if (override === lastOverride) return;
-        lastOverride = override;
+        for (const [id, info] of Object.entries(machines)) {
+          const card = document.querySelector(`[data-machine="${id}"]`);
+          if (!card) continue;
 
-        if (override === 'running' && runningSinceMs === null) {
-          setRunning(Date.now());
-        } else if (override === 'reset') {
-          neutralStreak = 0;
-          setAvailable();
+          const num   = parseInt(id, 10);
+          const state = initState(num);
+
+          const override = info.override;
+          if (override === state.lastOverride) continue;
+          state.lastOverride = override;
+
+          if (info.duration) state.countdownMs = info.duration * 60 * 1000;
+
+          if (override === 'running' && state.runningSinceMs === null) {
+            setRunning(card, state, Date.now(), info.label ?? '');
+          } else if (override === 'reset') {
+            setAvailable(card, state);
+          }
         }
       } catch { }
     }
 
-    // ── Poll donnee.csv (capteur physique) ────────────────────────────────
+    // ── Capteur physique : uniquement machine 29 ──────────────────────────
+    let neutralStreak     = 0;
+    let lastSeenTimestamp = null;
+
     function parseTimestampToMs(ts) {
       const s = String(ts ?? '').trim();
       if (!s) return null;
@@ -291,7 +363,10 @@
       return null;
     }
 
-    async function pollMachine1() {
+    async function pollMachine29() {
+      const card  = getCard(29);
+      const state = initState(29);
+      if (!card) return;
       try {
         const res = await fetch(`${RENDER_URL}/donnee.csv`, { cache: 'no-store' });
         if (!res.ok) return;
@@ -302,34 +377,42 @@
         if (lastSeenTimestamp === last.ts) return;
         lastSeenTimestamp = last.ts;
 
-        if (runningSinceMs !== null) { setRunning(); return; }
+        if (state.runningSinceMs !== null) { setRunning(card, state); return; }
 
         if (!isNeutral(last.fg)) {
           const start = findStartAfterLastTripleNeutral(rows);
           const now = Date.now();
-          setRunning(start && start <= now ? start : now);
+          setRunning(card, state, start && start <= now ? start : now);
           neutralStreak = 0;
         } else {
           neutralStreak += 1;
-          if (neutralStreak >= 5) setAvailable();
+          if (neutralStreak >= 5) setAvailable(card, state);
         }
       } catch { }
     }
 
-    // ── Tick minuteur ─────────────────────────────────────────────────────
+    // ── Tick minuteurs (toutes machines) ──────────────────────────────────
     setInterval(() => {
-      if (runningSinceMs === null) return;
-      const remaining = COUNTDOWN_MS - (Date.now() - runningSinceMs);
-      if (remaining <= 0) { neutralStreak = 0; setAvailable(); return; }
-      timerEl.textContent = formatDuration(remaining);
+      for (const [id, state] of Object.entries(machineState)) {
+        if (state.runningSinceMs === null) continue;
+        const card = document.querySelector(`[data-machine="${id}"]`);
+        if (!card) continue;
+        const remaining = state.countdownMs - (Date.now() - state.runningSinceMs);
+        if (remaining <= 0) {
+          neutralStreak = 0;
+          setAvailable(card, state);
+          continue;
+        }
+        card.querySelector('[data-role="timer"]').textContent = formatDuration(remaining);
+      }
     }, 250);
 
-    // ── Démarrage ─────────────────────────────────────────────────────────
-    setAvailable();
-    pollAdminState();
-    pollMachine1();
-    setInterval(pollAdminState, 1000);   // vérifie l'admin toutes les secondes
-    setInterval(pollMachine1,   1000);
+    // ── Initialisation ────────────────────────────────────────────────────
+    [...LEFT_MACHINES, ...TOP_MACHINES, ...RIGHT_MACHINES, ...CENTER_MACHINES].forEach(n => initState(n));
+    pollAllAdminStates();
+    pollMachine29();
+    setInterval(pollAllAdminStates, 1000);
+    setInterval(pollMachine29, 1000);
   </script>
 </body>
 </html>
